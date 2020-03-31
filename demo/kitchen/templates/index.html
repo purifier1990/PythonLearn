@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Order Simulator</title>
+    <script type="text/javascript" src="{{ url_for('static', filename = 'js/lib/socket.io.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename = 'js/lib/jquery-3.4.1.min.js') }}"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            var socket = io.connect('http://' + document.domain + ':' + location.port, { reconnect: true });
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'I\'m connected!'});
+            });
+            
+            $('form#start').submit(function(event) {
+                socket.emit('StartSimulation', {data: 'please start'});
+                return false;
+            });
+            socket.on('StartSimulation', function() {
+                $('#response').text('server has began to send order')
+            });
+            socket.on('OrderUpdated', function(data) {
+                console.log(data)
+                $('#response').text(data);
+            });
+        });
+    </script>
+</head>
+<body>
+    <form id="start" method="POST" action="#">
+        <input type="submit" value="start simulation">
+        <br>
+        <text id="response"></text>
+    </form>
+</body>
+</html>

@@ -5,15 +5,27 @@ import logging
 from datetime import datetime
 from order import RenderDishInfo
 
+logger = logging.getLogger(__name__)
+f_Handler = logging.FileHandler(datetime.now().strftime('./Logs/' + __name__ + '-%Y-%m-%d-%H-%M-%S.log'))
+f_Handler.setLevel(logging.INFO)
+f_Formart = logging.Formatter('%(process)d-%(levelname)s-%(message)s')
+f_Handler.setFormatter(f_Formart)
+logger.addHandler(f_Handler)
+
+
+		
 class OrderDish(Thread):
 	def __init__(self, order, shelfActor, overflowShelfActor, notifierActor, isOnOverflow, level):
 		Thread.__init__(self)
-		self.logger = logging.getLogger(__name__)
-		f_Handler = logging.FileHandler(datetime.now().strftime('./Logs/' + __name__ + '-%Y-%m-%d-%H-%M-%S.log'))
-		f_Handler.setLevel(level)
-		f_Formart = logging.Formatter('%(process)d-%(levelname)s-%(message)s')
-		f_Handler.setFormatter(f_Formart)
-		self.logger.addHandler(f_Handler)
+		self.logger = logger
+
+		#self.logger = logging.getLogger(__name__)
+		#f_Handler = logging.FileHandler(datetime.now().strftime('./Logs/' + __name__ + '-%Y-%m-%d-%H-%M-%S.log'))
+		#f_Handler.setLevel(level)
+		#f_Formart = logging.Formatter('%(process)d-%(levelname)s-%(message)s')
+		#f_Handler.setFormatter(f_Formart)
+		#self.logger.addHandler(f_Handler)
+
 		self.stopped = Event()
 		self.order = order
 		self.shelfLife = order.shelfLife
@@ -22,7 +34,7 @@ class OrderDish(Thread):
 		self.shelfActor = shelfActor
 		self.notifierActor = notifierActor
 		self.overflowShelfActor = overflowShelfActor
-		self.driverArriveTime = random.randint(2, 10)
+		self.driverArriveTime = random.randint(2, 1000)
 		self.isOnOverflow = isOnOverflow
 		self.logger.info(datetime.now().strftime('%Y/%m/%d %H:%M:%S:%f    ') + 'Order ' + str(self.order.id) + ', name is ' + self.order.name + ', has been created and started to decay itself, dirver arrived time is ' + str(self.driverArriveTime) + ' seconds from now. with shelf' + str(self.shelfActor) + ' On the overflowShelf: ' + str(self.isOnOverflow))
 		self.start()
@@ -63,7 +75,7 @@ class OrderDish(Thread):
 					self.shelfActor.tell({'source': 'orderDish', 'orderStatus': 'decayed', 'order': self.order})
 				self.logger.info(datetime.now().strftime('%Y/%m/%d %H:%M:%S:%f    ') + self.order.temp + ' shelf has available slot to take orders from overflow shelf as order has decayed, sending message to it')
 				self.overflowShelfActor.tell({'source': 'orderDish', 'orderStatus': 'decayed', 'shelf': self.shelfActor, 'order': self.order})
-				self.notifierActor.tell({'source': 'OrderDish', 'orderRenderInfo': self.buildRenderInfo(False, True)})
+				self.notifierActor.ask({'source': 'OrderDish', 'orderRenderInfo': self.buildRenderInfo(False, True)})
 			elif self.driverArriveTime == 0:
 				self.stopped.set()
 				if self.shelfActor != self.overflowShelfActor:
@@ -71,10 +83,10 @@ class OrderDish(Thread):
 					self.shelfActor.tell({'source': 'orderDish', 'orderStatus': 'pickup', 'order': self.order})
 				self.logger.info(datetime.now().strftime('%Y/%m/%d %H:%M:%S:%f    ') + self.order.temp + ' shelf has available slot to take orders from overflow shelf as order has been pickup, sending message to it')
 				self.overflowShelfActor.tell({'source': 'orderDish', 'orderStatus': 'pickup', 'shelf': self.shelfActor, 'order': self.order})
-				self.notifierActor.tell({'source': 'OrderDish', 'orderRenderInfo': self.buildRenderInfo(True, False)})
+				self.notifierActor.ask({'source': 'OrderDish', 'orderRenderInfo': self.buildRenderInfo(True, False)})
 			else:
-				self.notifierActor.tell({'source': 'OrderDish', 'orderRenderInfo': self.buildRenderInfo(False, False)})
+				self.notifierActor.ask({'source': 'OrderDish', 'orderRenderInfo': self.buildRenderInfo(False, False)})
 			self.driverArriveTime -= 1
-			
+
 
 

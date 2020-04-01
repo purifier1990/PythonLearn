@@ -9,6 +9,7 @@ from threading import Thread, Event
 import logging
 from order import Order
 from datetime import datetime
+import copy
 
 class OrderSimulator(Thread):
 	def __init__(self, orderScheduler, level, _lambda):
@@ -27,22 +28,15 @@ class OrderSimulator(Thread):
 		self.orders = data['orders']
 		self.num_orders = len(self.orders)
 		self.count = 0
-		self.t = 1/3.0
 		self.logger.info(datetime.now().strftime('%Y/%m/%d %H:%M:%S    ') + 'OrderSimulator has been created. ')
 
 	def run(self):
 		self.logger.info(datetime.now().strftime('%Y/%m/%d %H:%M:%S    ') + 'OrderSimulator has started. ')
-		while not self.stopped.wait(self.t):
-			selectedOrder = self.orders[random.randint(0, self.num_orders - 1)]
+		while not self.stopped.wait(1.0/self._lambda):
+			selectedOrder = copy.deepcopy(self.orders[random.randint(0, self.num_orders - 1)])
 			payload = Order(selectedOrder)
 			self.orderScheduler.tell({'source': 'OrderSender', 'order': payload})
 			self.logger.info(datetime.now().strftime('%Y/%m/%d %H:%M:%S:%f    ') + 'Order has been sent to Scheduler. id is ' + str(payload.id) + ' name is' + payload.name + ', shelfLife is ' + str(payload.shelfLife) + ', decayRate is ' + str(payload.decayRate) + ', temp is ' + payload.temp)
-			self.count += 1
-			if self.count == 4:
-				self.t = 0.25
-				self.count = 0
-			else:
-				self.t = 1/3.0
 
 class OrderSimulatorActor(ThreadingActor):
 	def __init__(self, actorPool, orderSimulator, level):

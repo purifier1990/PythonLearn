@@ -20,7 +20,10 @@ class Notifier(Thread):
 
 	def applyData(self, renderInfo):
 		if renderInfo.isDecayed or renderInfo.isPicked:
-			del self.frontEndData[renderInfo.shelf][str(renderInfo.id)]
+			try:
+				del self.frontEndData[renderInfo.shelf][str(renderInfo.id)]
+			except:
+				pass
 		else:
 			self.frontEndData[renderInfo.shelf][str(renderInfo.id)] = json.dumps(renderInfo.__dict__)
 		self.logger.info(datetime.now().strftime('%Y/%m/%d %H:%M:%S:%f    ') + 'frontEndData is ' + str(self.frontEndData))
